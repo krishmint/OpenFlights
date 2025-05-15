@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: postgres:14
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: openflights_development
+    ports:
+      - "5432:5432"
+
+  web:
+    image: krishmint/openflights:v6
+    build: .
+    depends_on: 
+      - db
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/openflights_development
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails db:prepare && bundle exec rails s -b 0.0.0.0"
+    volumes:
+      - .:/app
+      - packs:/app/public/packs
+    
+
+  webpack:
+    image: krishmint/openflights:v5
+    build: .
+    depends_on:
+      - web
+    ports:
+      - "3035:3035"
+    volumes:
+      - .:/app
+      - packs:/app/public/packs
+    command: bash -c "yarn install && ./bin/webpack-dev-server"
+    
+
+volumes:
+  pg_data:
+  packs:

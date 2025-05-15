@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webpack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webpack
+  template:
+    metadata:
+      labels:
+        app: webpack
+    spec:
+      containers:
+      - name: webpack
+        image: krishmint/openflights:v5
+        ports:
+        - containerPort: 3035
+        volumeMounts:
+        - name: packs
+          mountPath: /app/public/packs
+        command: ["bash", "-c"]
+        args: ["yarn install && ./bin/webpack-dev-server"]
+      volumes:
+      - name: packs
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webpack
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3035
+    targetPort: 3035
+  selector:
+    app: webpack
