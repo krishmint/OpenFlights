@@ -1,0 +1,33 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: unified-docker-compose-pipeline-run
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: git-url
+      value: git@github.com:krishmint/OpenFlights.git
+    - name: docker-username
+      value: krishmint
+    - name: docker-password
+      value: Krish@031998
+    - name: image-name
+      value: krishmint/open-flights:v1.0
+  pipelineRef:
+    name: unified-docker-compose-pipeline
+  taskRunTemplate:
+    serviceAccountName: default
+  timeouts:
+    pipeline: 1h0m0s
+  workspaces:
+    - name: shared-data
+      volumeClaimTemplate:
+        metadata:
+          creationTimestamp: null
+          name: shared-data-pvc
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi

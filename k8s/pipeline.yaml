@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: unified-docker-compose-pipeline
+  namespace: tekton-pipelines 
+spec:
+  params:
+    - name: git-url
+    - name: docker-username
+    - name: docker-password
+    - name: image-name
+  workspaces:
+    - name: shared-data
+  tasks:
+    - name: clone-and-build
+      taskRef:
+        name: clone-and-compose-task
+      workspaces:
+        - name: shared-data
+          workspace: shared-data
+      params:
+        - name: git-url
+          value: $(params.git-url)
+        - name: docker-username
+          value: $(params.docker-username)
+        - name: docker-password
+          value: $(params.docker-password)
+        - name: image-name
+          value: $(params.image-name)

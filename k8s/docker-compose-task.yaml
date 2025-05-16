@@ -1,0 +1,58 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: clone-and-compose-task
+  namespace: tekton-pipelines 
+spec:
+  workspaces:
+    - name: shared-data
+  params:
+    - name: git-url
+    - name: docker-username
+    - name: docker-password
+    - name: image-name
+  steps:
+    - name: clone
+      image: alpine/git
+      workingDir: $(workspaces.shared-data.path)
+      volumeMounts:
+        - name: ssh-key
+          mountPath: /ssh
+      script: |
+        #!/bin/sh
+        echo ">> Setting up SSH for private GitHub clone"
+        mkdir -p ~/.ssh
+        cp /ssh/ssh-privatekey ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+        echo ">> Cloning repository into $(workspaces.shared-data.path)/repo"
+        git clone "$(params.git-url)" repo
+        echo ">> Cloned repo contents:"
+        ls -la repo
+    
+
+    - name: setup-docker-config
+      image: alpine
+      script: |
+        #!/bin/sh
+        mkdir -p /tekton/home/.docker
+        echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"username\":\"$(params.docker-username)\",\"password\":\"$(params.docker-password)\"}}}" > /tekton/home/.docker/config.json
+
+
+    - name: build-and-push-with-kaniko
+      image: gcr.io/kaniko-project/executor:latest
+      workingDir: $(workspaces.shared-data.path)/repo
+      env:
+        - name: DOCKER_CONFIG
+          value: /tekton/home/.docker
+      args:
+        - "--dockerfile=dockerfile"
+        - "--context=$(workspaces.shared-data.path)/repo"
+        - "--destination=$(params.image-name)"
+        
+
+  volumes:
+    - name: ssh-key
+      secret:
+        secretName: git-ssh-key
