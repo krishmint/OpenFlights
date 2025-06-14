@@ -3,6 +3,7 @@ kind: StatefulSet
 metadata:
   name: postgres
 spec:
+  
   serviceName: "postgres"
   replicas: 1
   selector:
@@ -13,6 +14,8 @@ spec:
       labels:
         app: postgres
     spec:
+      nodeSelector:
+        nodegroup: backend  # or frontend
       containers:
       - name: postgres
         image: postgres:14
@@ -25,13 +28,16 @@ spec:
           value: "postgres"
         - name: POSTGRES_DB
           value: "openflights_development"
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata  # Tell Postgres to use subdir
         volumeMounts:
         - name: pg-data
-          mountPath: /var/lib/postgresql/data
+          mountPath: /var/lib/postgresql/data # ✅ Use subdirectory
   volumeClaimTemplates:
   - metadata:
       name: pg-data
     spec:
+      storageClassName: gp2  # Optional if default
       accessModes: ["ReadWriteOnce"]
       resources:
         requests:

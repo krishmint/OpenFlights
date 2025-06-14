@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: webpack
 spec:
+  
   replicas: 1
   selector:
     matchLabels:
@@ -12,6 +13,8 @@ spec:
       labels:
         app: webpack
     spec:
+      nodeSelector:
+        nodegroup: frontend  # or backend
       containers:
       - name: webpack
         image: krishmint/openflights:v5
